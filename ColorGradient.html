@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Gradient Puzzle</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #instructions {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(7, 50px);
+            grid-template-rows: repeat(7, 50px);
+            gap: 2px;
+            margin-bottom: 20px;
+        }
+        .square {
+            width: 50px;
+            height: 50px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .selected {
+            transform: scale(1.1);
+            border: 2px solid white;
+        }
+        .hint {
+            outline: 2px solid yellow;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <p>Click on two squares to swap them and restore the gradient.</p>
+        <button id="hintButton">Hint</button>
+    </div>
+    <div id="grid"></div>
+
+    <script>
+        const gridElement = document.getElementById('grid');
+        const gridSize = 7;
+        const squares = [];
+        let selectedSquare = null;
+        let correctGradient = [];
+
+        function getRandomBaseColor() {
+            return {
+                r: Math.floor(Math.random() * 128) + 64,
+                g: Math.floor(Math.random() * 128) + 64,
+                b: Math.floor(Math.random() * 128) + 64
+            };
+        }
+
+        function createGradient(baseColor) {
+            const gradient = [];
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const r = baseColor.r + Math.floor((x / (gridSize - 1)) * (255 - baseColor.r));
+                    const g = baseColor.g + Math.floor((y / (gridSize - 1)) * (255 - baseColor.g));
+                    const b = baseColor.b + Math.floor(((x + y) / ((gridSize - 1) * 2)) * (255 - baseColor.b));
+                    gradient.push(`rgb(${r}, ${g}, ${b})`);
+                }
+            }
+            return gradient;
+        }
+
+        function shuffleGradient(gradient) {
+            const shuffledIndices = [];
+            while (shuffledIndices.length < 6) {
+                const randomIndex = Math.floor(Math.random() * 49);
+                if (!shuffledIndices.includes(randomIndex)) {
+                    shuffledIndices.push(randomIndex);
+                }
+            }
+            const shuffledGradient = [...gradient];
+            shuffledIndices.forEach((index, i) => {
+                const swapIndex = shuffledIndices[(i + 1) % shuffledIndices.length];
+                [shuffledGradient[index], shuffledGradient[swapIndex]] = [shuffledGradient[swapIndex], shuffledGradient[index]];
+            });
+            return shuffledGradient;
+        }
+
+        function createGrid() {
+            const baseColor = getRandomBaseColor();
+            correctGradient = createGradient(baseColor);
+            const shuffledGradient = shuffleGradient(correctGradient);
+            shuffledGradient.forEach((color, index) => {
+                const square = document.createElement('div');
+                square.classList.add('square');
+                square.style.backgroundColor = color;
+                square.dataset.index = index;
+                square.addEventListener('click', () => selectSquare(square));
+                gridElement.appendChild(square);
+                squares.push(square);
+            });
+        }
+
+        function selectSquare(square) {
+            if (selectedSquare) {
+                swapSquares(selectedSquare, square);
+                selectedSquare.classList.remove('selected');
+                selectedSquare = null;
+            } else {
+                selectedSquare = square;
+                square.classList.add('selected');
+            }
+        }
+
+        function swapSquares(square1, square2) {
+            const index1 = square1.dataset.index;
+            const index2 = square2.dataset.index;
+            [square1.style.backgroundColor, square2.style.backgroundColor] = [square2.style.backgroundColor, square1.style.backgroundColor];
+            [square1.dataset.index, square2.dataset.index] = [index2, index1];
+            checkForWin();
+        }
+
+        function checkForWin() {
+            const currentColors = squares.map(square => square.style.backgroundColor);
+            if (correctGradient.every((color, index) => color === currentColors[index])) {
+                setTimeout(() => alert("Congratulations! You've completed the puzzle!"), 100);
+            }
+        }
+
+        function showHint() {
+            const currentColors = squares.map(square => square.style.backgroundColor);
+            for (let i = 0; i < correctGradient.length; i++) {
+                if (correctGradient[i] !== currentColors[i]) {
+                    squares[i].classList.add('hint');
+                    setTimeout(() => squares[i].classList.remove('hint'), 1000);
+                    break;
+                }
+            }
+        }
+
+        document.getElementById('hintButton').addEventListener('click', showHint);
+
+        createGrid();
+    </script>
+</body>
+</html>
